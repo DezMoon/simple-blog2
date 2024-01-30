@@ -1,5 +1,7 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { Post } from '../models/post.model';
+import { Apollo } from 'apollo-angular';
+import gql from 'graphql-tag';
 
 @Component({
   selector: 'app-post-list',
@@ -8,9 +10,26 @@ import { Post } from '../models/post.model';
 })
 export class PostListComponent {
   @Input() posts!: Post[];
-  @Output() postSelected = new EventEmitter<Post>();
 
-  onSelect(post: Post) {
-    this.postSelected.emit(post);
+  constructor(private apollo: Apollo) {}
+
+  // Example: You can add more Apollo logic for fetching posts
+  fetchPosts() {
+    this.apollo
+      .watchQuery<any>({
+        query: gql`
+          query {
+            posts {
+              id
+              title
+              content
+              author
+            }
+          }
+        `,
+      })
+      .valueChanges.subscribe(({ data }) => {
+        this.posts = data.posts;
+      });
   }
 }

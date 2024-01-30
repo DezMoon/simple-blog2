@@ -1,22 +1,34 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+const mongoose = require("mongoose");
+const jwt = require("jsonwebtoken");
+const multer = require("multer");
+const path = require("path");
+const crypto = require("crypto");
+const fs = require("fs");
+
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 app.use(cors());
 
-const Pool = require("pg").Pool;
-const pool = new Pool({
-  user: "your_username",
-  host: "your_host",
-  database: "your_database",
-  password: "your_password",
-  port: 5432,
+mongoose.connect(
+  "mongodb+srv://moongachiku:nUjgdnPMTBEX4ZaW@blog.kabxvsi.mongodb.net/",
+  {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  }
+);
+
+const postSchema = new mongoose.Schema({
+  title: String,
+  content: String,
+  author: String,
 });
 
-const jwt = require("jsonwebtoken");
+const Post = mongoose.model("Post", postSchema);
 
 const generateAccessToken = (username) => {
   return jwt.sign(username, process.env.ACCESS_TOKEN_SECRET, {
@@ -38,100 +50,6 @@ const authenticateToken = (req, res, next) => {
     next();
   });
 };
-
-const users = [];
-
-app.post("/register", (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) {
-    return res.sendStatus(400);
-  }
-  const user = { username, password };
-  users.push(user);
-  res.sendStatus(201);
-});
-
-app.post("/login", (req, res) => {
-  const { username, password } = req.body;
-  const user = users.find(
-    (u) => u.username === username && u.password === password
-  );
-  if (!user) {
-    return res.sendStatus(401);
-  }
-  const accessToken = generateAccessToken({ username: user.username });
-  res.json({ accessToken });
-});
-
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
-  next();
-});
-
-app.get("/posts", authenticateToken, (req, res) => {
-  pool.query("SELECT * FROM posts ORDER BY id ASC", (error, results) => {
-    if (error) {
-      throw error;
-    }
-    res.status(200).json(results.rows);
-  });
-});
-
-app.get("/posts/:id", authenticateToken, (req, res) => {
-  const id = parseInt(req.params.id);
-  pool.query("SELECT * FROM posts WHERE id = $1", [id], (error, results) => {
-    if (error) {
-      throw error;
-    }
-    res.status(200).json(results.rows);
-  });
-});
-
-app.post("/posts", authenticateToken, (req, res) => {
-  const { title, content, author } = req.body;
-  pool.query(
-    "INSERT INTO posts (title, content, author) VALUES ($1, $2, $3)",
-    [title, content, author],
-    (error, results) => {
-      if (error) {
-        throw error;
-      }
-      res.status(201).send(`Post added with ID: ${results.insertId}`);
-    }
-  );
-});
-
-app.put("/posts/:id", authenticateToken, (req, res) => {
-  const id = parseInt(req.params.id);
-  const { title, content, author } = req.body;
-  pool.query(
-    "UPDATE posts SET title = $1, content = $2, author = $3 WHERE id = $4",
-    [title, content, author, id],
-    (error, results) => {
-      if (error) {
-        throw error;
-      }
-      res.status(200).send(`Post modified with ID: ${id}`);
-    }
-  );
-});
-
-app.delete("/posts/:id", authenticateToken, (req, res) => {
-  const id = parseInt(req.params.id);
-  pool.query("DELETE FROM posts WHERE id = $1", [id], (error, results) => {
-    if (error) {
-      throw error;
-    }
-    res.status(200).send(`Post deleted with ID: ${id}`);
-  });
-});
-
-app.listen(port, () => {
-  console.log(`App running on port ${port}.`);
-});
-
-const multer = require("multer");
-const path = require("path");
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -174,9 +92,6 @@ app.post("/upload", (req, res) => {
   });
 });
 
-const fs = require("fs");
-const crypto = require("crypto");
-
 const encrypt = (buffer) => {
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv(
@@ -213,3 +128,41 @@ const retrieveFile = (filename) => {
   const buffer = decrypt(encrypted);
   return buffer;
 };
+
+app.get("/posts", authenticateToken, async (req, res) => {
+  try {
+    const posts = await Post.find().exec();
+    res.status(200).json(posts);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/posts/:id", authenticateToken, async (req, res) => {
+  const id = req.params.id;
+  try {
+    const post = await Post.findById(id).exec();
+    if (!post) {
+      res.status(404).json({ error: "Post not found" });
+    } else {
+      res.status(200).json(post);
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/posts", authenticateToken, async (req, res) => {
+  const { title, content, author } = req.body;
+  const newPost = new Post({ title, content, author });
+  try {
+    await newPost.save();
+    res.status(201).send(`Post added with ID: ${newPost._id}`);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.listen(port, () => {
+  console.log(`App running on port ${port}.`);
+});
