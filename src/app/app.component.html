@@ -1,15 +1,5 @@
-<div class="container">
-  <div class="row">
-    <div class="col-md-6">
-      <h2>Posts</h2>
-      <app-post-list
-        [posts]="posts"
-        (postSelected)="onPostSelected($event)"
-      ></app-post-list>
-    </div>
-    <div class="col-md-6">
-      <h2>Post Detail</h2>
-      <app-post-detail [post]="selectedPost"></app-post-detail>
-    </div>
-  </div>
-</div>
+<app-post-list
+  [post]="posts"
+  (postSelected)="onPostSelected($event)"
+></app-post-list>
+<app-post-detail [post]="selectedPost"></app-post-detail>

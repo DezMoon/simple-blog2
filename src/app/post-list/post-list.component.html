@@ -1,3 +1,7 @@
-<div *ngFor="let post of posts" (click)="selectPost(post)">
-  {{ post.title }}
+<div *ngFor="let post of posts">
+  <div class="post" (click)="selectPost(post)">
+    <h3>{{ post.title }}</h3>
+    <p>{{ post.content }}</p>
+    <p>Author: {{ post.author }}</p>
+  </div>
 </div>
