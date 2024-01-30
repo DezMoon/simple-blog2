@@ -1,13 +1,39 @@
 import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Post } from './models/post.model';
 
 @Component({
   selector: 'app-root',
-  standalone: true,
-  imports: [RouterOutlet],
   templateUrl: './app.component.html',
-  styleUrl: './app.component.css'
+  styleUrls: ['./app.component.css'],
 })
 export class AppComponent {
-  title = 'simple-blog';
+  posts: Post[] = [
+    {
+      id: 1,
+      title: 'Post 1',
+      content: 'This is the first post.',
+      author: 'John Doe',
+      date: new Date('2022-01-01'),
+    },
+    {
+      id: 2,
+      title: 'Post 2',
+      content: 'This is the second post.',
+      author: 'Jane Smith',
+      date: new Date('2022-01-02'),
+    },
+    {
+      id: 3,
+      title: 'Post 3',
+      content: 'This is the third post.',
+      author: 'Bob Johnson',
+      date: new Date('2022-01-03'),
+    },
+  ];
+
+  selectedPost!: Post;
+
+  onPostSelected(post: Post) {
+    this.selectedPost = post;
+  }
 }
