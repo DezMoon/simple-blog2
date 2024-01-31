@@ -1,12 +1,8 @@
 import { Component } from '@angular/core';
 import { Post } from './models/post.model';
-//import { PostDetailComponent } from './post-detail/post-detail.component';
-import { PostListComponent } from './post-list/post-list.component';
 
 @Component({
   selector: 'app-root',
-  standalone: true,
-  imports: [],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
 })
